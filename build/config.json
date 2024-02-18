@@ -7,26 +7,7 @@
     ],
     "ms_freq": 3000000,
     "forecast_days": 3,
-    "count_days": 3,
     "ms_update": 180000,
-    "time_of_a_part": {
-        "night": [
-            "T00:00",
-            "T06:00"
-        ],
-        "morning": [
-            "T06:00",
-            "T12:00"
-        ],
-        "day": [
-            "T12:00",
-            "T18:00"
-        ],
-        "evening": [
-            "T18:00",
-            "T00:00"
-        ]
-    },
     "weather_type": {
         "0": "Clear sky",
         "1": "Mainly clear",
