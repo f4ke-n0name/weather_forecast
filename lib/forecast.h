@@ -12,8 +12,8 @@
 #include <csignal>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/component/event.hpp>
-#include <ftxui/component/receiver.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/component/component.hpp>
 
 using json = nlohmann::json;
 using namespace ftxui;
@@ -42,6 +42,12 @@ const uint8_t index_morning = 1;
 const uint8_t index_day = 2;
 const uint8_t index_evening = 3;
 
+std::map<uint8_t , std::string> output_part_of_day {
+  {0 , "Night"}, 
+  {1 , "Morning"},
+  {2, "Day"},
+  {3 , "Evening"}
+} ;
 
 struct CityInfo {
   std::string name;
@@ -64,8 +70,7 @@ struct AllDayWetherInfo {
   std::vector<WeatherInfo> parts_of_day = std::vector<WeatherInfo>(4);
 };
 
-static std::map<std::string, std::vector<AllDayWetherInfo>> city_forecast;
-static std::map<std::string, CityInfo> geographical_info;
+std::map<std::string, CityInfo> geographical_info;
 
 json ReadConfig(const std::string& directory);
 
@@ -75,4 +80,4 @@ void GetCoords(CityInfo& city);
 
 json SendRequest(CityInfo& city, json& data);
 
-void GetInfoForForecast(const std::string& directory);
+std::map<std::string, std::vector<AllDayWetherInfo>> GetInfoForForecast(const std::string& directory);

@@ -78,11 +78,12 @@ struct DayPartWeatherInfo {
   uint8_t end_hour = 0;
 };
 
-void SetWeatherInfoForPartDay(DayPartWeatherInfo& data, uint16_t& iteration,
-                              const uint8_t& part_of_day,
-                              std::string& city_name) {
+void SetWeatherInfoForPartDay(
+    DayPartWeatherInfo& data, uint16_t& iteration, const uint8_t& part_of_day,
+    std::string& city_name,
+    std::map<std::string, std::vector<AllDayWetherInfo>>& city_forecast) {
   city_forecast[city_name][iteration].parts_of_day[part_of_day].precipitation =
-      std::round(data.precipitation_average / part_count_hour * 100) / 100;
+      std::round(data.precipitation_average / part_count_hour);
   city_forecast[city_name][iteration]
       .parts_of_day[part_of_day]
       .precipitation_probability =
@@ -93,15 +94,16 @@ void SetWeatherInfoForPartDay(DayPartWeatherInfo& data, uint16_t& iteration,
       GetWeatherCode(data.max_entry_weather_code);
   city_forecast[city_name][iteration]
       .parts_of_day[part_of_day]
-      .max_temperature = std::round(data.max_temperature_part * 100) / 100;
+      .max_temperature = std::round(data.max_temperature_part);
   city_forecast[city_name][iteration]
       .parts_of_day[part_of_day]
-      .min_temperature = std::round(data.min_temperature_part * 100) / 100;
+      .min_temperature = std::round(data.min_temperature_part);
 }
 
-void ParseInfoPartOfDay(DayPartWeatherInfo& data,
-                        const std::string& part_of_day, uint16_t& iteration,
-                        json& info, std::string& city_name) {
+void ParseInfoPartOfDay(
+    DayPartWeatherInfo& data, const std::string& part_of_day,
+    uint16_t& iteration, json& info, std::string& city_name,
+    std::map<std::string, std::vector<AllDayWetherInfo>>& city_forecast) {
   for (uint16_t i = data.start_hour + iteration * count_hour_in_day;
        i < data.end_hour + iteration * count_hour_in_day; ++i) {
     data.precipitation_average +=
@@ -120,42 +122,50 @@ void ParseInfoPartOfDay(DayPartWeatherInfo& data,
                  info["hourly"]["temperature_2m"][i].get<float>());
   }
   if (part_of_day == "night") {
-    SetWeatherInfoForPartDay(data, iteration, index_night, city_name);
+    SetWeatherInfoForPartDay(data, iteration, index_night, city_name,
+                             city_forecast);
   } else if (part_of_day == "morning") {
-    SetWeatherInfoForPartDay(data, iteration, index_morning, city_name);
+    SetWeatherInfoForPartDay(data, iteration, index_morning, city_name,
+                             city_forecast);
   } else if (part_of_day == "day") {
-    SetWeatherInfoForPartDay(data, iteration, index_day, city_name);
+    SetWeatherInfoForPartDay(data, iteration, index_day, city_name,
+                             city_forecast);
   } else if (part_of_day == "evening") {
-    SetWeatherInfoForPartDay(data, iteration, index_evening, city_name);
+    SetWeatherInfoForPartDay(data, iteration, index_evening, city_name,
+                             city_forecast);
   }
 }
 
-void ParseRequest(CityInfo& city, json& info) {
+void ParseRequest(
+    CityInfo& city, json& info,
+    std::map<std::string, std::vector<AllDayWetherInfo>>& city_forecast) {
   uint16_t time_iter = 0;
   DayPartWeatherInfo data;
   for (uint16_t i = 0; i < count_days; ++i, time_iter += count_hour_in_day) {
     data.start_hour = start_hour_night;
     data.end_hour = end_hour_night;
-    ParseInfoPartOfDay(data, "night", i, info, city.name);
+    ParseInfoPartOfDay(data, "night", i, info, city.name, city_forecast);
     data = DayPartWeatherInfo();
     data.start_hour = start_hour_morning;
     data.end_hour = end_hour_morning;
-    ParseInfoPartOfDay(data, "morning", i, info, city.name);
+    ParseInfoPartOfDay(data, "morning", i, info, city.name, city_forecast);
     data = DayPartWeatherInfo();
     data.start_hour = start_hour_day;
     data.end_hour = end_hour_day;
-    ParseInfoPartOfDay(data, "day", i, info, city.name);
+    ParseInfoPartOfDay(data, "day", i, info, city.name, city_forecast);
     data = DayPartWeatherInfo();
     data.start_hour = start_hour_evening;
     data.end_hour = end_hour_evening;
-    ParseInfoPartOfDay(data, "evening", i, info, city.name);
+    ParseInfoPartOfDay(data, "evening", i, info, city.name, city_forecast);
     city_forecast[city.name][i].date =
         info["hourly"]["time"][time_iter].get<std::string>().substr(
             0, len_format_date);
   }
 }
 
-void GetInfoForForecast(const std::string& directory) {
+std::map<std::string, std::vector<AllDayWetherInfo>> GetInfoForForecast(
+    const std::string& directory) {
+  std::map<std::string, std::vector<AllDayWetherInfo>> city_forecast;
   json data_from_config = ReadConfig(directory);
   for (auto city : data_from_config["cities"]) {
     city_forecast[city] = std::vector<AllDayWetherInfo>(
@@ -163,6 +173,7 @@ void GetInfoForForecast(const std::string& directory) {
     geographical_info[city].name = city;
     GetCoords(geographical_info[city]);
     json info = SendRequest(geographical_info[city], data_from_config);
-    ParseRequest(geographical_info[city], info);
+    ParseRequest(geographical_info[city], info, city_forecast);
   }
+  return city_forecast;
 }
