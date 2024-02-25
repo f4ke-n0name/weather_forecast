@@ -17,29 +17,39 @@ std::string round_double_to_string(std::string number, int count) {
 
 Element design_part_of_day(AllDayWetherInfo& info, const uint8_t& index,
                            json& data) {
+  std::string weather_code =
+      data["weather_type"]
+          [std::to_string(info.parts_of_day[index].weather_code)]
+              .get<std::string>();
+  Elements weather_design;
+  for (auto& element :
+       data["weather_design"][weather_code].get<std::vector<std::string>>()) {
+        weather_design.push_back(text(element));
+  }
   Element design = window(
       text(output_part_of_day[index]) | center | bold,
-      vbox(
-          text(data["weather_type"]
-                   [std::to_string(info.parts_of_day[index].weather_code)]
-                       .get<std::string>()),
-          text(
-              round_double_to_string(
-                  std::to_string(info.parts_of_day[index].min_temperature), 1) +
-              " ... " +
-              round_double_to_string(
-                  std::to_string(info.parts_of_day[index].max_temperature), 1) +
-              " °C"),
-          text(round_double_to_string(
-                   std::to_string(info.parts_of_day[index].wind_speed), 1) +
-               " km/h"),
-          text(round_double_to_string(
-                   std::to_string(info.parts_of_day[index].precipitation), 1) +
-               " mm |" +
-               std::to_string(
-                   info.parts_of_day[index].precipitation_probability) +
-               "%")) |
-          flex);
+      hbox(
+          vbox(weather_design) | flex | center,
+          vbox(
+              text(weather_code) | center,
+              text(round_double_to_string(
+                       std::to_string(info.parts_of_day[index].min_temperature),
+                       1) +
+                   " ... " +
+                   round_double_to_string(
+                       std::to_string(info.parts_of_day[index].max_temperature),
+                       1) +
+                   " °C"),
+              text(round_double_to_string(
+                       std::to_string(info.parts_of_day[index].wind_speed), 1) +
+                   " km/h"),
+              text(round_double_to_string(
+                       std::to_string(info.parts_of_day[index].precipitation),
+                       1) +
+                   " mm |" +
+                   std::to_string(
+                       info.parts_of_day[index].precipitation_probability) +
+                   "%"))|flex | center))|flex;
   return design;
 }
 
@@ -55,13 +65,17 @@ int main(int argc, char** argv) {
   json data_from_config = ReadConfig(
       "/home/danil/github-classroom/is-itmo-c-23/labwork7-f4ke-n0name/build/"
       "config.json");
-  uint16_t counter = count_days;
+  uint16_t counter = data_from_config["forecast_days"];
   uint16_t counter_max = counter;
-  uint16_t update_seconds = update_time;
+  uint16_t update_seconds = data_from_config["update_seconds"];
   std::map<std::string, std::vector<AllDayWetherInfo>> city_forecast =
       GetInfoForForecast(data_from_config, counter);
-  auto current_city = city_forecast.begin();
-  std::string city = current_city->first;
+  std::vector<std::string> cities;
+  for (auto element : city_forecast) {
+    cities.push_back(element.first);
+  }
+  uint16_t index = 0;
+  std::string city = cities[index];
   auto renderer = Renderer([&] {
     Elements forecasts;
     for (int i = 0; i < counter; ++i) {
@@ -93,17 +107,13 @@ int main(int argc, char** argv) {
       screen.PostEvent(Event::Custom);
       return true;
     } else if (event == Event::Character('n')) {
-      current_city = (current_city == (city_forecast.end()))
-                         ? city_forecast.begin()
-                         : ++current_city;
-      city = current_city->first;
+      index = (index == cities.size() - 1 ? 0 : ++index);
+      city = cities[index];
       screen.PostEvent(Event::Custom);
       return true;
     } else if (event == Event::Character('p')) {
-      current_city = (current_city == city_forecast.begin())
-                         ? city_forecast.end()
-                         : --current_city;
-      city = current_city->first;
+      index = (index == 0 ? cities.size() - 1 : --index);
+      city = cities[index];
       screen.PostEvent(Event::Custom);
       return true;
     }

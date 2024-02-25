@@ -8,8 +8,6 @@ json ReadConfig(const std::string& directory) {
   if (input_config) {
     json data = json::parse(input_config);
     api_ninjas_city_key = data["X-Api-Key"];
-    count_days = data["forecast_days"];
-    update_time = data["update_seconds"];
     return data;
   }
   PrintError("Not found config.json");
