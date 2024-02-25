@@ -1,8 +1,6 @@
 #include <cpr/cpr.h>
-
 #include <algorithm>
 #include <cmath>
-#include <csignal>
 #include <filesystem>
 #include <fstream>
 #include <ftxui/component/component.hpp>
@@ -19,30 +17,30 @@
 using json = nlohmann::json;
 using namespace ftxui;
 
-const std::string url_city_template = "https://api.api-ninjas.com/v1/city";
-const std::string url_forecast_template =
+const std::string kUrlCityTemplate = "https://api.api-ninjas.com/v1/city";
+const std::string kUrlForecastTemplate =
     "https://api.open-meteo.com/v1/forecast";
 static std::string api_ninjas_city_key;
 
-uint16_t count_days;
-uint16_t update_time;
-const int16_t to_parse_coords_begin = 1;
-const int16_t to_parse_coords_end = 2;
-const uint8_t start_hour_night = 0;
-const uint8_t end_hour_night = 6;
-const uint8_t start_hour_morning = 6;
-const uint8_t end_hour_morning = 12;
-const uint8_t start_hour_day = 12;
-const uint8_t end_hour_day = 18;
-const uint8_t start_hour_evening = 18;
-const uint8_t end_hour_evening = 24;
-const uint8_t part_count_hour = 6;
-const uint8_t count_hour_in_day = 24;
-const uint8_t len_format_date = 10;
-const uint8_t index_night = 0;
-const uint8_t index_morning = 1;
-const uint8_t index_day = 2;
-const uint8_t index_evening = 3;
+const int16_t kToParseCoordsBegin = 1;
+const int16_t kToParseCoordsEnd = 2;
+const uint8_t kStartHourNight = 0;
+const uint8_t kEndHourNight = 6;
+const uint8_t kStartHourMorning = 6;
+const uint8_t kEndHourMorning = 12;
+const uint8_t kStartHourDay = 12;
+const uint8_t kEndHourDay = 18;
+const uint8_t kStartHourEvening = 18;
+const uint8_t kEndHourEvening = 24;
+const uint8_t kPartCountHour = 6;
+const uint8_t kCountHourInDay = 24;
+const uint8_t kLenFormatDate = 10;
+const uint8_t kIndexNight = 0;
+const uint8_t kIndexMorning = 1;
+const uint8_t kIndexDay = 2;
+const uint8_t kIndexEvening = 3;
+const uint8_t kMaxDaysInMonth = 30;
+const uint8_t kMinDaysInMonth = 1;
 
 std::map<uint8_t, std::string> output_part_of_day{
     {0, "Night"}, {1, "Morning"}, {2, "Day"}, {3, "Evening"}};
@@ -54,10 +52,10 @@ struct CityInfo {
 };
 
 struct WeatherInfo {
-  int16_t weather_code = 0;
+  uint16_t weather_code = 0;
   float max_temperature = __FLT_MIN__;
   float min_temperature = __FLT_MAX__;
-  int16_t wind_speed = INT16_MIN;
+  uint16_t wind_speed = INT16_MIN;
   float precipitation = 0;
   uint16_t precipitation_probability = 0;
   WeatherInfo() = default;
@@ -70,9 +68,9 @@ struct AllDayWetherInfo {
 
 std::map<std::string, CityInfo> geographical_info;
 
-json ReadConfig(const std::string& directory);
+json ReadConfig(const std::string_view& directory);
 
-void PrintError(const std::string& text);
+void PrintError(const std::string_view& text);
 
 void GetCoords(CityInfo& city);
 
@@ -80,3 +78,5 @@ json SendRequest(CityInfo& city, json& data, uint16_t& counter);
 
 std::map<std::string, std::vector<AllDayWetherInfo>> GetInfoForForecast(
     json& data_from_config, uint16_t& counter);
+
+void DrawForecast(const std::string& directory);
