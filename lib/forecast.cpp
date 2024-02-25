@@ -1,9 +1,6 @@
 #include "forecast.h"
 
-void PrintError(const std::string& text) {
-  std::cerr << text << '\n';
-  exit(EXIT_FAILURE);
-}
+void PrintError(const std::string& text) { std::cerr << text << '\n'; }
 
 json ReadConfig(const std::string& directory) {
   std::filesystem::path path = directory;
@@ -12,6 +9,7 @@ json ReadConfig(const std::string& directory) {
     json data = json::parse(input_config);
     api_ninjas_city_key = data["X-Api-Key"];
     count_days = data["forecast_days"];
+    update_time = data["update_seconds"];
     return data;
   }
   PrintError("Not found config.json");
@@ -31,14 +29,15 @@ void GetCoords(CityInfo& city) {
     return;
   }
   PrintError("Bad Gateway!");
+  exit(EXIT_FAILURE);
 }
 
-json SendRequest(CityInfo& city, json& data) {
+json SendRequest(CityInfo& city, json& data, uint16_t& counter) {
   cpr::Response response =
       cpr::Get(cpr::Url(url_forecast_template),
                cpr::Parameters{{"longitude", std::to_string(city.longitude)},
                                {"latitude", std::to_string(city.latitude)},
-                               {"forecast_days", std::to_string(count_days)},
+                               {"forecast_days", std::to_string(counter)},
                                {"hourly", "weather_code"},
                                {"hourly", "temperature_2m"},
                                {"hourly", "wind_speed_10m"},
@@ -49,6 +48,7 @@ json SendRequest(CityInfo& city, json& data) {
     return data;
   }
   PrintError("Error!");
+  exit(EXIT_FAILURE);
 }
 
 uint16_t GetWeatherCode(std::vector<uint16_t>& max_entry_weather_code) {
@@ -138,10 +138,10 @@ void ParseInfoPartOfDay(
 
 void ParseRequest(
     CityInfo& city, json& info,
-    std::map<std::string, std::vector<AllDayWetherInfo>>& city_forecast) {
+    std::map<std::string, std::vector<AllDayWetherInfo>>& city_forecast, uint16_t& counter) {
   uint16_t time_iter = 0;
   DayPartWeatherInfo data;
-  for (uint16_t i = 0; i < count_days; ++i, time_iter += count_hour_in_day) {
+  for (uint16_t i = 0; i < counter; ++i, time_iter += count_hour_in_day) {
     data.start_hour = start_hour_night;
     data.end_hour = end_hour_night;
     ParseInfoPartOfDay(data, "night", i, info, city.name, city_forecast);
@@ -164,16 +164,14 @@ void ParseRequest(
 }
 
 std::map<std::string, std::vector<AllDayWetherInfo>> GetInfoForForecast(
-    const std::string& directory) {
+    json& data_from_config, uint16_t& counter) {
   std::map<std::string, std::vector<AllDayWetherInfo>> city_forecast;
-  json data_from_config = ReadConfig(directory);
   for (auto city : data_from_config["cities"]) {
-    city_forecast[city] = std::vector<AllDayWetherInfo>(
-        data_from_config["forecast_days"].get<int16_t>());
+    city_forecast[city] = std::vector<AllDayWetherInfo>(counter);
     geographical_info[city].name = city;
     GetCoords(geographical_info[city]);
-    json info = SendRequest(geographical_info[city], data_from_config);
-    ParseRequest(geographical_info[city], info, city_forecast);
+    json info = SendRequest(geographical_info[city], data_from_config, counter);
+    ParseRequest(geographical_info[city], info, city_forecast, counter);
   }
   return city_forecast;
 }

@@ -1,19 +1,20 @@
 #include <cpr/cpr.h>
+
+#include <algorithm>
+#include <cmath>
+#include <csignal>
 #include <filesystem>
 #include <fstream>
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/event.hpp>
+#include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/dom/elements.hpp>
 #include <iostream>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <string>
-#include <vector>
-#include <algorithm>
-#include <cmath>
 #include <thread>
-#include <csignal>
-#include <ftxui/component/screen_interactive.hpp>
-#include <ftxui/component/event.hpp>
-#include <ftxui/dom/elements.hpp>
-#include <ftxui/component/component.hpp>
+#include <vector>
 
 using json = nlohmann::json;
 using namespace ftxui;
@@ -23,7 +24,8 @@ const std::string url_forecast_template =
     "https://api.open-meteo.com/v1/forecast";
 static std::string api_ninjas_city_key;
 
-static uint16_t count_days;
+uint16_t count_days;
+uint16_t update_time;
 const int16_t to_parse_coords_begin = 1;
 const int16_t to_parse_coords_end = 2;
 const uint8_t start_hour_night = 0;
@@ -42,12 +44,8 @@ const uint8_t index_morning = 1;
 const uint8_t index_day = 2;
 const uint8_t index_evening = 3;
 
-std::map<uint8_t , std::string> output_part_of_day {
-  {0 , "Night"}, 
-  {1 , "Morning"},
-  {2, "Day"},
-  {3 , "Evening"}
-} ;
+std::map<uint8_t, std::string> output_part_of_day{
+    {0, "Night"}, {1, "Morning"}, {2, "Day"}, {3, "Evening"}};
 
 struct CityInfo {
   std::string name;
@@ -61,7 +59,7 @@ struct WeatherInfo {
   float min_temperature = __FLT_MAX__;
   int16_t wind_speed = INT16_MIN;
   float precipitation = 0;
-  float precipitation_probability = 0;
+  uint16_t precipitation_probability = 0;
   WeatherInfo() = default;
 };
 
@@ -78,6 +76,7 @@ void PrintError(const std::string& text);
 
 void GetCoords(CityInfo& city);
 
-json SendRequest(CityInfo& city, json& data);
+json SendRequest(CityInfo& city, json& data, uint16_t& counter);
 
-std::map<std::string, std::vector<AllDayWetherInfo>> GetInfoForForecast(const std::string& directory);
+std::map<std::string, std::vector<AllDayWetherInfo>> GetInfoForForecast(
+    json& data_from_config, uint16_t& counter);

@@ -1,13 +1,12 @@
 {
-    "X-Api-Key": "49Y8Nc078fsxTIB8UgYZ2w==5yXdu1a2oKJcnwdb",
+    "X-Api-Key": "yKCEvLe9v6/zuPyYvxjtUA==NeYXtMpeK7RGkidS",
     "cities": [
         "Ufa",
-        "Saint_Petersburg",
-        "Moscow"
+        "Moscow",
+        "Omsk"
     ],
-    "ms_freq": 3000000,
     "forecast_days": 3,
-    "ms_update": 180000,
+    "update_seconds": 10,
     "weather_type": {
         "0": "Clear sky",
         "1": "Mainly clear",
