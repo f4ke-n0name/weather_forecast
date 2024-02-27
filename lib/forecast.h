@@ -45,6 +45,8 @@ const uint8_t kMinDaysInMonth = 1;
 std::map<uint8_t, std::string> output_part_of_day{
     {0, "Night"}, {1, "Morning"}, {2, "Day"}, {3, "Evening"}};
 
+enum class IndexPartsOfDay {Night, Morning, Day, Evening};
+
 struct CityInfo {
   std::string name;
   double longitude;
@@ -58,7 +60,6 @@ struct WeatherInfo {
   uint16_t wind_speed = INT16_MIN;
   float precipitation = 0;
   uint16_t precipitation_probability = 0;
-  WeatherInfo() = default;
 };
 
 struct AllDayWetherInfo {
@@ -68,13 +69,13 @@ struct AllDayWetherInfo {
 
 std::map<std::string, CityInfo> geographical_info;
 
-json ReadConfig(const std::string_view& directory);
+json ReadConfig(std::string_view directory);
 
 void PrintError(const std::string_view& text);
 
-void GetCoords(CityInfo& city);
+void SetCoords(CityInfo& city);
 
-json SendRequest(CityInfo& city, json& data, uint16_t& counter);
+json SendRequest(CityInfo& city, json& data, uint16_t counter);
 
 std::map<std::string, std::vector<AllDayWetherInfo>> GetInfoForForecast(
     json& data_from_config, uint16_t& counter);
